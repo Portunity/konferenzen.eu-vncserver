@@ -1,0 +1,6 @@
+9001 ICON "favicon.ico"
+9002 10002 "../ssl/DOMAIN.crt"
+9010 BITMAP "background.bmp"
+9020 10003 "logo.png"
+9021 10003 "button_start.png"
+9022 10003 "button_end.png"
