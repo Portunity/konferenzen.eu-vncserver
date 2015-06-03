@@ -36,6 +36,7 @@ const wchar_t* STR_DEMO = L"Demo-Modus:";
 const wchar_t* STR_ERR_NO_URL = L"Bitte Url angeben.";
 
 const wchar_t* STR_OPEN_LINK_FROM_LOGO = L"http://www.konferenzen.eu";
+
 //IDs der eingebetteten Ressourcen
 #define RID_FAVICON 9001
 

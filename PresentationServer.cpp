@@ -21,7 +21,6 @@ to contact us see our website at <http://www.portunity.de>
 */
 #include "PresentationServer.h"
 #include <string>
-#include <stdexcept>
 #include <rfb/rfbclient.h>
 #include <stdlib.h>
 #include <iostream>
@@ -34,6 +33,10 @@ const char* STR_ERR_WRONG_ANSWER = "Fehlerhafte Antwort von Server";
 #include <gnutls/gnutls.h>
 #include <gnutls/gnutlsxx.h>
 #endif
+
+//Version des Tools, die an den Webserver übermittelt wird,
+//immer dann erhöhen wenn Änderungen zu Inkompatibilität führen könnten
+const int TOOL_VERSION = 1;
 
 std::string urlencode(const std::string & param) {
 	std::string r;
@@ -49,6 +52,17 @@ std::string urlencode(const std::string & param) {
 	}
 
 	return r;
+}
+
+std::wstring utf8_to_ucs2(const std::string & data) {
+	//from utf8 to ucs2
+	int tmpbsize = MultiByteToWideChar(CP_UTF8, 0, data.data(), data.size(), 0, 0);
+	if (tmpbsize > 0) {
+		std::unique_ptr<wchar_t[]> tmpb(new wchar_t[tmpbsize + 1]);
+		MultiByteToWideChar(CP_UTF8, 0, data.data(), data.size(), tmpb.get(), tmpbsize);
+		return std::wstring(tmpb.get(), tmpb.get() + tmpbsize);
+	}
+	return std::wstring();
 }
 
 //Parst den Parameter $name aus der antwort
@@ -89,8 +103,8 @@ PresentationServer::PresentationServer(const std::string & conferenceUrl,
 _server(0) {
 	//Erstmal dürfte jetzt die Authorisierung und die Anfrage an den Manager geschehen
 	//Dazu einfach über nen Socket ne primitive http anfrage senden und die Antwort auswerten
-	
-	const int BUF_SIZE = 1024;
+	//Achtung momentan ist BUF_SIZE auch die maximale Nachrichtengröße die Empfangen werden kann!!
+	const int BUF_SIZE = 2048;
 	char tmpBuffer[BUF_SIZE];
 	SOCKET httpSocket = rfbConnectToTcpAddr(const_cast<char*>(managerHost.c_str()), managerPort);
 	if (httpSocket == INVALID_SOCKET) {
@@ -121,7 +135,7 @@ _server(0) {
 #endif
 
 	std::string httpRequest;
-	std::string httpRequestBody = managerParam+"="+urlencode(conferenceUrl);
+	std::string httpRequestBody = managerParam + "=" + urlencode(conferenceUrl) + "&version=" + std::to_string(TOOL_VERSION);
 	httpRequest += "POST ";
 	httpRequest += managerPath;
 	httpRequest += " HTTP/1.1\r\n";
@@ -166,14 +180,17 @@ _server(0) {
 	unsigned short port;
 	std::string host;
 	int lifetime;
-
+	
 	try {
+		_messageBox = utf8_to_ucs2(getParameter(httpResponse, "MessageBox", ""));
 		port = atoi(getParameter(httpResponse, "PresentationServerUsePort").c_str());
 		host = getParameter(httpResponse, "PresentationServerUseHost");
 		_demo = atoi(getParameter(httpResponse, "Demo", "0").c_str())?true:false;
 		lifetime = atoi(getParameter(httpResponse, "RuntimeSec", "0").c_str());
 	}
 	catch (std::runtime_error e) {
+		if (!_messageBox.empty())
+			throw runtime_error_with_extra_msg(_messageBox, getParameter(httpResponse, "Message"));
 		throw std::runtime_error(getParameter(httpResponse,"Message"));
 	}
 	//@TOOD vlt unterstützung von http weiterleitungen einbauen.

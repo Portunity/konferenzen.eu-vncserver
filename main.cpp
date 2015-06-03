@@ -566,6 +566,15 @@ LRESULT CALLBACK windowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 						g_lastErrorString.clear();
 					}
 				}
+				catch (runtime_error_with_extra_msg & e) {
+					
+					std::wstring mbmsg(e.getPublicMessage().begin(), e.getPublicMessage().end());
+					MessageBoxW(g_windowHandle, mbmsg.c_str(), L"Achtung", MB_OK);
+
+					g_lastErrorString = std::wstring(e.what(), e.what() + strlen(e.what()));
+					std::cerr << "Error: " << e.what() << std::endl;
+					stopPresentation();
+				}
 				catch (std::exception & e) {
 					g_lastErrorString = std::wstring(e.what(),e.what()+strlen(e.what()));
 					std::cerr << "Error: " << e.what() << std::endl;

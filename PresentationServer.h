@@ -25,7 +25,20 @@ to contact us see our website at <http://www.portunity.de>
 #include <chrono>
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include "ScreenCapture.h"
+
+/**
+* exception um eine zusätzliche nachricht mit schicken zu können.
+*/
+class runtime_error_with_extra_msg : public std::runtime_error {
+	private:
+		std::wstring _publicmsg;
+	public:
+		runtime_error_with_extra_msg(const std::wstring & publicmsg, const std::string & msg1) :_publicmsg(publicmsg), runtime_error(msg1) {}
+		const std::wstring & getPublicMessage() const { return _publicmsg; }
+};
+
 
 /**
 	Kapselt den VNC Server und den Authentifizierungsaufruf an die Managerroutine der node Anwendung
@@ -45,6 +58,8 @@ private:
 	std::chrono::system_clock::time_point _timeOfDeath;
 	//Wenn == false, dann wurde ein Endzeitpunkt nicht übermittelt.
 	bool _useTimeOfDeath;
+	//Wert der vom Webserver im Parameter MEssageBox übermittelt wurde
+	std::wstring _messageBox;
 public:
 	/**
 		@param conferenceUrl Die Konferenzraumurl die an den Manager gesendet wird um diesen Server zu authentifizieren.
@@ -89,4 +104,12 @@ public:
 		Liefert den Zeitpunkt zurück zu welchem die Präsentation vorraussichtlich von der Gegenstelle beendet wird.
 	*/
 	const std::chrono::system_clock::time_point & getTimeOfDeath() const { return _timeOfDeath; }
+
+	/*
+		Der Webserver hat bei der Anfrage die Möglichkeit den Parameter MessageBox zu setzen und damit einen
+		string anzugeben, der dem Benutzer angezeit werden soll. Hier kann er ausgelesen werden.
+	*/
+	const std::wstring & getMessageToShow() const {
+		return _messageBox;
+	}
 };
