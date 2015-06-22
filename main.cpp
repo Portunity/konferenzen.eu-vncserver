@@ -737,8 +737,12 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		}
 	}
 
+	//Als Versionshinweis build Zeitpunkt ausgeben
+	std::cout << "Build: " << __DATE__ << "," << __TIME__ << std::endl;
+
 	if (cmdline.find("-dev") != std::string::npos) {
 		g_devMode = true;
+		std::cout << "Running in development mode" << std::endl;
 	}
 
 	setDPIAware();
