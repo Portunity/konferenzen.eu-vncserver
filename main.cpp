@@ -647,7 +647,7 @@ HWND initWindowInstance(int nCmdShow)
 	registerWindowClass();
 
 	g_windowHandle = CreateWindowW(STR_MAIN_WINDOW_CLASS, STR_WINDOW_TITLE, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-		0, 0, g_fontSize * 32, g_fontSize * 19, NULL, NULL, g_instance, NULL);
+		CW_USEDEFAULT, CW_USEDEFAULT, g_fontSize * 32, g_fontSize * 19, NULL, NULL, g_instance, NULL);
 
 	if (!g_windowHandle) {
 		return 0;
