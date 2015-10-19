@@ -22,20 +22,20 @@ to contact us see our website at <http://www.portunity.de>
 #pragma once
 
 //Konstanten
-const wchar_t* STR_WINDOW_TITLE = L"Konferenzen.eu Bildschirmübertragung";	// The title bar text
+const wchar_t* const STR_WINDOW_TITLE = L"Konferenzen.eu Bildschirmübertragung";	// The title bar text
 
-const char* STR_MANAGER_HOST = "www.konferenzen.eu";
-const unsigned short STR_MANAGER_PORT = 80;
+const char* const STR_MANAGER_HOST = "www.konferenzen.eu";
+const unsigned short STR_MANAGER_PORT = 443;
 
-const char* STR_MANAGER_HOST_DEV = "www.dev.konferenzen.eu";
-const unsigned short STR_MANAGER_PORT_DEV = 3062;
+const char* const STR_MANAGER_HOST_DEV = "www.dev.konferenzen.eu";
+const unsigned short STR_MANAGER_PORT_DEV = 3061;
 
-const wchar_t* STR_INFO_TEXT = L"Dieses Programm überträgt den Bildschirminhalt Ihres Monitors an\nIhren Konferenzraum bei konferenzen.eu für Ihre Konferenzteilnehmer:";
-const wchar_t* STR_INPUT_LABEL = L"URL Ihres Konferenzraumes";
-const wchar_t* STR_DEMO = L"Demo-Modus:";
-const wchar_t* STR_ERR_NO_URL = L"Bitte Url angeben.";
+const wchar_t* const STR_INFO_TEXT = L"Dieses Programm überträgt den Bildschirminhalt Ihres Monitors auf\ndie Präsentationsseite Ihres Konferenzen.eu-Konferenzraums.";
+const wchar_t* const STR_INPUT_LABEL = L"URL Ihres Konferenzraumes";
+const wchar_t* const STR_DEMO = L"Demo-Modus:";
+const wchar_t* const STR_ERR_NO_URL = L"Bitte Url angeben.";
 
-const wchar_t* STR_OPEN_LINK_FROM_LOGO = L"http://www.konferenzen.eu";
+const wchar_t* const STR_OPEN_LINK_FROM_LOGO = L"http://www.konferenzen.eu";
 
 //IDs der eingebetteten Ressourcen
 #define RID_FAVICON 9001

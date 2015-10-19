@@ -1,6 +1,6 @@
 License
 -------
-Konferenzen.eu Bildschirmübertragung, just a simple VNC Server with Windows GUI using LibVNCServer.
+Konferenzen.eu Bildschirmï¿½bertragung, just a simple VNC Server with Windows GUI using LibVNCServer.
 
 Copyright (C) 2015 Portunity GmbH
 
@@ -21,3 +21,9 @@ Contact
 -------
 
 see our website at: http://www.portunity.de/
+
+
+Building
+--------
+
+Use the commands in build.txt and alter them matching your build environment.

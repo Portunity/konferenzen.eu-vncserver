@@ -252,18 +252,18 @@ bool saveLastUsedConferenceUrl(const std::string & url) {
 	return false;
 }
 //Wieder einkommentieren, wenn mal irgendwann ssl support implementiert wurde
-/*
+
 bool loadCertificateFromResource() {
 	char* tmp;
 	size_t s;
-	loadDataFromResource(MAKEINTRESOURCE(RID_CERT), MAKEINTRESOURCE(RID_CERT_TYPE), &tmp, &s);
+	loadDataFromResource(RID_CERT, RID_CERT_TYPE, &tmp, &s);
 
 	g_cert = std::string(tmp, s);
 	std::cout << "Loaded certificate (" << g_cert.size() << std::endl;
 	delete[] tmp;
 	return true;
 }
-*/
+
 
 /**
 	Markiert den Bereich mit Timer als ungültig
@@ -296,7 +296,7 @@ void redrawStatusArea() {
 */
 bool startPresentation() {
 
-	//if (g_cert.size() > 0 || loadCertificateFromResource()) {
+	if (g_cert.size() > 0 || loadCertificateFromResource()) {
 		char buffer[512];
 		GetWindowText(g_textInputHandle, buffer, 512);
 		if (strlen(buffer) == 0) {
@@ -327,8 +327,9 @@ bool startPresentation() {
 			if (g_devMode) {
 				g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST_DEV, STR_MANAGER_PORT_DEV, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
 			}
-			else
+			else {
 				g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST, STR_MANAGER_PORT, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+			}
 
 			g_server->setCapture(g_capture);
 
@@ -343,11 +344,11 @@ bool startPresentation() {
 			redrawStatusArea();
 			return true;
 		}
-	/*}
+	}
 	else {
 		MessageBox(g_windowHandle, "Laden des Zertifikats schlug fehl.", "Schwerwiegender Fehler", MB_OK);
 		return false;
-	}*/
+	}
 }
 
 /**
@@ -725,6 +726,24 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	LPTSTR    lpCmdLine,
 	int       nCmdShow)
 {
+	/*
+	 * Das Binden der Anwendung mit der kompilierten GNUTls Version zerstört tatsächlich den Exceptionmechanismus.
+	 * Wie habe ich keine Ahnung..., scheint aber zu funktionieren, wenn 
+	 */
+	try {
+		
+		std::string cmdline(lpCmdLine);
+		if (cmdline.find("-excp") != std::string::npos) {
+			throw std::runtime_error("some exception");
+		}
+		
+		
+	}
+	catch (std::exception & e) {
+		std::cerr << "Error: " << e.what() << std::endl;
+		return 0;
+	}
+	
 	bool openedConsole = false;
 	//Parameter parsen, mit Konsole starten?
 	std::string cmdline(lpCmdLine);

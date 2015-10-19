@@ -1,8 +1,8 @@
 /*
-Konferenzen.eu Präsentationsserver. Einfacher vorkonfigurierter VNC Client für Windows
+Konferenzen.eu Prï¿½sentationsserver. Einfacher vorkonfigurierter VNC Client fï¿½r Windows
 Einfache Klasse zur Aufnahme des Desktop
 
-Copyright(C) 2015 Portunity GmbH, author: Benjamin Dürholt
+Copyright(C) 2015 Portunity GmbH, author: Benjamin Dï¿½rholt
 
 This program is free software : you can redistribute it and / or modify
 it under the terms of the GNU General Public License as published by
@@ -21,22 +21,21 @@ to contact us see our website at <http://www.portunity.de>
 */
 #include "PresentationServer.h"
 #include <string>
-#include <rfb/rfbclient.h>
 #include <stdlib.h>
 #include <iostream>
 
-const char* STR_ERR_WEBHOST_UNREACHABLE = "konferenzen.eu nicht erreichbar";
-const char* STR_ERR_RFBHOST_UNREACHABLE = "Server nicht erreichbar";
-const char* STR_ERR_WRONG_ANSWER = "Fehlerhafte Antwort von Server";
+const char* const STR_ERR_WEBHOST_UNREACHABLE = "konferenzen.eu nicht erreichbar";
+const char* const STR_ERR_RFBHOST_UNREACHABLE = "Server nicht erreichbar";
+const char* const STR_ERR_WRONG_ANSWER = "Fehlerhafte Antwort von Server";
+const char* const STR_ERR_TLS_FAILED = "Sichere Verbindung fehlgeschlagen";
 
-#ifdef HAS_GNUTLS
 #include <gnutls/gnutls.h>
 #include <gnutls/gnutlsxx.h>
-#endif
 
-//Version des Tools, die an den Webserver übermittelt wird,
-//immer dann erhöhen wenn Änderungen zu Inkompatibilität führen könnten
-const int TOOL_VERSION = 1;
+#include <rfb/rfbclient.h>
+//Version des Tools, die an den Webserver ï¿½bermittelt wird,
+//immer dann erhï¿½hen wenn ï¿½nderungen zu Inkompatibilitï¿½t fï¿½hren kï¿½nnten
+const int TOOL_VERSION = 2;
 
 std::string urlencode(const std::string & param) {
 	std::string r;
@@ -80,7 +79,7 @@ std::string getParameter(const std::string & str, const std::string & name) {
 }
 
 //Parst den Parameter aus der Antwort. Anders als die erste Variante wird, wenn dieser nicht gefunden wurde keine Exception geworfen
-//sondern der übergebene Defaultwert zurückgegeben
+//sondern der ï¿½bergebene Defaultwert zurï¿½ckgegeben
 std::string getParameter(const std::string & str, const std::string & name, const std::string & defaultValue) {
 	std::string s = name + ": ";
 	std::size_t pos = str.find(s);
@@ -101,74 +100,100 @@ PresentationServer::PresentationServer(const std::string & conferenceUrl,
 	const std::string & certificate,
 	const std::string & managerPath, const std::string & managerParam):
 _server(0) {
-	//Erstmal dürfte jetzt die Authorisierung und die Anfrage an den Manager geschehen
-	//Dazu einfach über nen Socket ne primitive http anfrage senden und die Antwort auswerten
-	//Achtung momentan ist BUF_SIZE auch die maximale Nachrichtengröße die Empfangen werden kann!!
+	//Erstmal dï¿½rfte jetzt die Authorisierung und die Anfrage an den Manager geschehen
+	//Dazu einfach ï¿½ber nen Socket ne primitive http anfrage senden und die Antwort auswerten
+	//Achtung momentan ist BUF_SIZE auch die maximale Nachrichtengrï¿½ï¿½e die Empfangen werden kann!!
 	const int BUF_SIZE = 2048;
 	char tmpBuffer[BUF_SIZE];
 	SOCKET httpSocket = rfbConnectToTcpAddr(const_cast<char*>(managerHost.c_str()), managerPort);
+	std::string httpResponse;
 	if (httpSocket == INVALID_SOCKET) {
 		std::cerr << "Failed to connect to " << managerHost << ":" << managerPort << std::endl;
 		throw std::runtime_error(STR_ERR_WEBHOST_UNREACHABLE);
+		return;
 	}
 
-	//gnutls aufbauen
-#ifdef HAS_GNUTLS
+	//HTTPS Verbindung mit GnuTLS und handkodierter HTTP Nachricht :)
 	gnutls::client_session session;
 	gnutls::certificate_credentials credentials;
-
 	gnutls_datum_t data;
-	data.size = certificate.size();
-	data.data = (unsigned char*)certificate.data();
-	credentials.set_x509_trust(data, GNUTLS_X509_FMT_PEM);
-	session.set_credentials(credentials);
-	session.set_priority("NORMAL", 0);
-	session.set_transport_ptr((gnutls_transport_ptr_t)(ptrdiff_t)httpSocket);
-	
-	if ( session.handshake() < 0) {
-		std::cerr << "TLS failed." << std::endl;
-		throw std::runtime_error("TLS failed.");
-	}
-	else {
-		std::cout<<session.get_cipher()<<std::endl;
-	}
-#endif
+	try {
+		if (certificate.size() > 0) {
+			data.size = certificate.size();
+			data.data = (unsigned char*)certificate.data();
+			credentials.set_x509_trust(data, GNUTLS_X509_FMT_PEM);
+			//< achtung Ã¼bergabe per referenz und offenbar wird ein poiinter auf die originale instanz verwendet
+			// => credentials darf erst mit session freigeben werden
+			session.set_credentials(credentials);
+		}
+		session.set_priority("NORMAL", 0);
+		session.set_transport_ptr((gnutls_transport_ptr_t)(ptrdiff_t)httpSocket);
+		if ( session.handshake() < 0) {
+			std::cerr << "TLS failed." << std::endl;
+			throw std::runtime_error("TLS failed.");
+		}
+		else {
+			std::cout<<"cipher: "<<gnutls_cipher_get_name(session.get_cipher())<<std::endl;
+			//Server Zertifikat prÃ¼fen:
+			unsigned int verify = 0;
+			session.verify_peers_certificate(verify);
+			std::cout<<"verification: "<<verify<<std::endl;
+			if (verify > 0) {
+				gnutls_datum_t pr;
+				gnutls_certificate_verification_status_print(verify, GNUTLS_CRT_X509, &pr, 0);
+				std::cerr<<pr.data<<std::endl;
+				free(pr.data);
+				throw std::runtime_error("Certificate is not trusted.");
+			}
+		}
+		
+		std::string httpRequest;
+		std::string httpRequestBody = managerParam + "=" + urlencode(conferenceUrl) + "&version=" + std::to_string(TOOL_VERSION);
+		httpRequest += "POST ";
+		httpRequest += managerPath;
+		httpRequest += " HTTP/1.1\r\n";
+		httpRequest += "Host: ";
+		httpRequest += managerHost + "\r\n";
+		httpRequest += "Content-Type: application/x-www-form-urlencoded\r\n";
+		httpRequest += "Connection: close\r\n";
+		sprintf(tmpBuffer, "%d", httpRequestBody.length());
+		httpRequest += "Content-Length: " + std::string(tmpBuffer) + "\r\n";
+		httpRequest += "\r\n";
+		httpRequest += httpRequestBody;
 
-	std::string httpRequest;
-	std::string httpRequestBody = managerParam + "=" + urlencode(conferenceUrl) + "&version=" + std::to_string(TOOL_VERSION);
-	httpRequest += "POST ";
-	httpRequest += managerPath;
-	httpRequest += " HTTP/1.1\r\n";
-	httpRequest += "Host: ";
-	httpRequest += managerHost + "\r\n";
-	httpRequest += "Content-Type: application/x-www-form-urlencoded\r\n";
-	httpRequest += "Connection: close\r\n";
-	sprintf(tmpBuffer, "%d", httpRequestBody.length());
-	httpRequest += "Content-Length: " + std::string(tmpBuffer) + "\r\n";
-	httpRequest += "\r\n";
-	httpRequest += httpRequestBody;
+		std::cout << "SEND >>" << std::endl << httpRequest << std::endl << "<<" << std::endl;
 
-	std::cout << "SEND >>" << std::endl << httpRequest << std::endl << "<<" << std::endl;
-#ifdef HAS_GNUTLS
-	session.send(httpRequest.data(), httpRequest.length());
-	int c = session.recv(tmpBuffer, BUF_SIZE);
-#else
-	send(httpSocket, httpRequest.data(), httpRequest.length(), 0);
+		session.send(httpRequest.data(), httpRequest.length());
 
-	//Alles lesen und hoffen dass sich der Webserver dran hält und die Verbindung schließt
-	//wenn er fertig mit Senden ist
-	int c = 0, r = 0;
-	do {
-		r = recv(httpSocket, tmpBuffer + c, BUF_SIZE - c, 0);
-		if (r > 0) c += r;
-	}  while (r > 0 && c < BUF_SIZE);
-#endif
-	
-	if (c > 1024 || r < 0) {
-		std::cerr << "Couldn't receive answer." << std::endl;
-		throw std::runtime_error(STR_ERR_WRONG_ANSWER);
+		std::cout << "WAITING TO RECEIVE.."<<std::endl;		
+		//Alles lesen und hoffen dass sich der Webserver dran hï¿½lt und die Verbindung schlieï¿½t
+		//wenn er fertig mit Senden ist
+		int c = 0, r = 0;
+		try{
+			do {
+				r = session.recv(tmpBuffer + c, BUF_SIZE - c);
+				if (r > 0) c += r;
+			}  while (r > 0 && c < BUF_SIZE);
+		}
+		catch (std::exception & e) {
+			std::cerr<<e.what()<<std::endl;
+		}
+
+		if (c > 1024 || r < 0) {
+			std::cerr << "Couldn't receive answer." << std::endl;
+			throw std::runtime_error(STR_ERR_WRONG_ANSWER);
+		}
+		
+		httpResponse = std::string (tmpBuffer, c);
+		session.bye(GNUTLS_SHUT_RDWR);
+		closesocket(httpSocket);
 	}
-	std::string httpResponse(tmpBuffer, c);
+	catch (...) {
+		//Irgendein Fehler trat auf, dann schlieÃŸen.
+		std::cerr<<gnutls_alert_get_name(session.get_alert())<<std::endl;
+		closesocket(httpSocket);
+		throw std::runtime_error(STR_ERR_TLS_FAILED); //weiterschmeiÃŸen
+	}
 	std::cout << "RECV >>" << std::endl << httpResponse << std::endl << "<<" << std::endl;
 	/**
 		Antwort sollte jetzt der typische HTTP Antwortquark sein und als Inhalt
@@ -193,15 +218,8 @@ _server(0) {
 			throw runtime_error_with_extra_msg(_messageBox, getParameter(httpResponse, "Message"));
 		throw std::runtime_error(getParameter(httpResponse,"Message"));
 	}
-	//@TOOD vlt unterstützung von http weiterleitungen einbauen.
 
-	//Fertig schließen
-#ifdef HAS_GNUTLS
-	session.bye(GNUTLS_SHUT_RDWR);
-#endif
-	closesocket(httpSocket);
-
-	//Wenn die erfolgreich war dann den Server erstellen, Größe = Desktopgröße
+	//Wenn die erfolgreich war dann den Server erstellen, Grï¿½ï¿½e = Desktopgrï¿½ï¿½e
 	_server = rfbGetScreen(0, 0, screenWidth, screenHeight, 8, 3, 4);
 	int buffersize = _server->width * _server->height * (_server->bitsPerPixel / 8);
 	_server->frameBuffer = new char[buffersize];
@@ -235,14 +253,16 @@ _server(0) {
 }
 
 PresentationServer::~PresentationServer() {
-	delete[] _server->frameBuffer;
-	_server->frameBuffer = 0;
-	rfbScreenCleanup(_server);
+	if (_server) {
+		delete[] _server->frameBuffer;
+		_server->frameBuffer = 0;
+		rfbScreenCleanup(_server);
+	}
 }
 
 bool PresentationServer::run() {
-	//Kein Client mehr da?
-	if (_server->clientHead == 0)
+	//Server tot oder kein Client mehr da?
+	if (!_server || _server->clientHead == 0)
 		return false;
 
 	//Server runtergefahren?
@@ -259,7 +279,7 @@ bool PresentationServer::run() {
 
 	rfbProcessEvents(_server, 1000);
 
-	// Wird die Präsentation irgendwann mit Gewalt beendet, dann kommen wir dem zuvor
+	// Wird die Prï¿½sentation irgendwann mit Gewalt beendet, dann kommen wir dem zuvor
 	if (_useTimeOfDeath) {
 		if (std::chrono::system_clock::now() > _timeOfDeath)
 			return false;

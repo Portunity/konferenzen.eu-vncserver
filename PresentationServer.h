@@ -1,8 +1,8 @@
 /*
-Konferenzen.eu Präsentationsserver. Einfacher vorkonfigurierter VNC Client für Windows
+Konferenzen.eu Prï¿½sentationsserver. Einfacher vorkonfigurierter VNC Client fï¿½r Windows
 Einfache Klasse zur Aufnahme des Desktop
 
-Copyright(C) 2015 Portunity GmbH, author: Benjamin Dürholt
+Copyright(C) 2015 Portunity GmbH, author: Benjamin Dï¿½rholt
 
 This program is free software : you can redistribute it and / or modify
 it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ to contact us see our website at <http://www.portunity.de>
 #include "ScreenCapture.h"
 
 /**
-* exception um eine zusätzliche nachricht mit schicken zu können.
+* exception um eine zusï¿½tzliche nachricht mit schicken zu kï¿½nnen.
 */
 class runtime_error_with_extra_msg : public std::runtime_error {
 	private:
@@ -48,29 +48,29 @@ private:
 	rfbScreenInfo* _server;
 	std::shared_ptr<ScreenCapture> _capture;
 
-	//Zähler für die Zeit um Bilder nur ein paar mal pro Sekunde aufzunehmen
+	//Zï¿½hler fï¿½r die Zeit um Bilder nur ein paar mal pro Sekunde aufzunehmen
 	std::chrono::high_resolution_clock::time_point _tick;
 
-	//Läuft als Demo. Ändert nichts an dem Verhalten sondern ist nur dazu da um über isDemo
-	//Abgefragt werden zu können um dann in der Ansicht eine Information auszugeben
+	//Lï¿½uft als Demo. ï¿½ndert nichts an dem Verhalten sondern ist nur dazu da um ï¿½ber isDemo
+	//Abgefragt werden zu kï¿½nnen um dann in der Ansicht eine Information auszugeben
 	bool _demo;
-	//Zeitpunkt zu dem die Präsentation vorraussichtlich von der Gegenstelle beendet wird.
+	//Zeitpunkt zu dem die Prï¿½sentation vorraussichtlich von der Gegenstelle beendet wird.
 	std::chrono::system_clock::time_point _timeOfDeath;
-	//Wenn == false, dann wurde ein Endzeitpunkt nicht übermittelt.
+	//Wenn == false, dann wurde ein Endzeitpunkt nicht ï¿½bermittelt.
 	bool _useTimeOfDeath;
-	//Wert der vom Webserver im Parameter MEssageBox übermittelt wurde
+	//Wert der vom Webserver im Parameter MEssageBox ï¿½bermittelt wurde
 	std::wstring _messageBox;
 public:
 	/**
 		@param conferenceUrl Die Konferenzraumurl die an den Manager gesendet wird um diesen Server zu authentifizieren.
-		@param managerHost Addresse des Präsentationsmanagers der nach Authentifizierung den VNC Proxy für diese Anwendung startet.
-						   Die Kommunikation mit dem Präsentationsmanager läuft über HTTP
-		@param managerPort Port für die Anfrage an den Manager
-		@param screenWidth Breite des zu übertragenden Screens
-		@param screenHeight Höhe des zu übertragenden Screens
-		@param certificate Für SSL Verbindungen zu benutzendes Zertifikat... (nicht benutzt)
+		@param managerHost Addresse des Prï¿½sentationsmanagers der nach Authentifizierung den VNC Proxy fï¿½r diese Anwendung startet.
+						   Die Kommunikation mit dem Prï¿½sentationsmanager lï¿½uft ï¿½ber HTTP
+		@param managerPort Port fï¿½r die Anfrage an den Manager
+		@param screenWidth Breite des zu ï¿½bertragenden Screens
+		@param screenHeight Hï¿½he des zu ï¿½bertragenden Screens
+		@param certificate Fï¿½r SSL Verbindungen zu benutzendes Zertifikat... (nicht benutzt)
 		@param managerPath Pfad, der bei der Anfrage genutzt werden soll
-		@param managerParam Name des POST Parameters in dem die conferenceUrl übermittelt werden soll.
+		@param managerParam Name des POST Parameters in dem die conferenceUrl ï¿½bermittelt werden soll.
 	*/
 	PresentationServer(const std::string & conferenceUrl, const std::string & managerHost,
 		unsigned short managerPort, int screenWidth, int screenHeight, const std::string & certificate = std::string() , const std::string & managerPath = std::string("/startPresentation"),
@@ -91,22 +91,22 @@ public:
 	}
 
 	/*
-		Demo Präsentation
+		Demo Prï¿½sentation
 	*/
 	bool isDemo() const { return _demo; }
 	
 	/*
-		Wert TimeOfDeath ist gültig?
+		Wert TimeOfDeath ist gï¿½ltig?
 	*/
 	bool useTimeOfDeath() const { return _useTimeOfDeath;  }
 
 	/*
-		Liefert den Zeitpunkt zurück zu welchem die Präsentation vorraussichtlich von der Gegenstelle beendet wird.
+		Liefert den Zeitpunkt zurï¿½ck zu welchem die Prï¿½sentation vorraussichtlich von der Gegenstelle beendet wird.
 	*/
 	const std::chrono::system_clock::time_point & getTimeOfDeath() const { return _timeOfDeath; }
 
 	/*
-		Der Webserver hat bei der Anfrage die Möglichkeit den Parameter MessageBox zu setzen und damit einen
+		Der Webserver hat bei der Anfrage die Mï¿½glichkeit den Parameter MessageBox zu setzen und damit einen
 		string anzugeben, der dem Benutzer angezeit werden soll. Hier kann er ausgelesen werden.
 	*/
 	const std::wstring & getMessageToShow() const {
