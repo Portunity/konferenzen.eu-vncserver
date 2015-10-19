@@ -1,0 +1,2 @@
+windres -O coff -i resources.rc -o resources.rc.obj
+g++ main.cpp PresentationServer.cpp ScreenCapture.cpp resources.rc.obj -o konferenzen.eu-vncserver.exe -O3 -static -std=c++0x -mwindows -static-libgcc -static-libstdc++ -I../libvncserver -I../build/libvncserver -IE:/msys64/usr/local/include -L../build/libvncserver -LE:/msys64/usr/local/lib -lshlwapi -lgdiplus -lgdi32 -lgnutlsxx -lgnutls -lnettle -lhogweed -lintl -lgmp -lcrypt32 -liconv -lidn -lvncserver -lpng -ljpeg -lws2_32 -lz -DHAS_GNUTLS=1
