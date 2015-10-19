@@ -176,7 +176,8 @@ _server(0) {
 			}  while (r > 0 && c < BUF_SIZE);
 		}
 		catch (std::exception & e) {
-			std::cerr<<e.what()<<std::endl;
+			std::cout<<"Ended Transmission"<<std::endl;
+			std::cout<<e.what()<<std::endl;
 		}
 
 		if (c > 1024 || r < 0) {
@@ -185,8 +186,13 @@ _server(0) {
 		}
 		
 		httpResponse = std::string (tmpBuffer, c);
-		session.bye(GNUTLS_SHUT_RDWR);
-		closesocket(httpSocket);
+		try {
+			session.bye(GNUTLS_SHUT_RDWR);
+			closesocket(httpSocket);
+		}
+		catch (...) {
+			std::cout << "Closing TLS Session failed." << std::endl;
+		}
 	}
 	catch (...) {
 		//Irgendein Fehler trat auf, dann schließen.
