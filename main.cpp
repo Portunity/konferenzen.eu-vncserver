@@ -726,24 +726,6 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	LPTSTR    lpCmdLine,
 	int       nCmdShow)
 {
-	/*
-	 * Das Binden der Anwendung mit der kompilierten GNUTls Version zerstört tatsächlich den Exceptionmechanismus.
-	 * Wie habe ich keine Ahnung..., scheint aber zu funktionieren, wenn 
-	 */
-	try {
-		
-		std::string cmdline(lpCmdLine);
-		if (cmdline.find("-excp") != std::string::npos) {
-			throw std::runtime_error("some exception");
-		}
-		
-		
-	}
-	catch (std::exception & e) {
-		std::cerr << "Error: " << e.what() << std::endl;
-		return 0;
-	}
-	
 	bool openedConsole = false;
 	//Parameter parsen, mit Konsole starten?
 	std::string cmdline(lpCmdLine);
