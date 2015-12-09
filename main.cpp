@@ -42,6 +42,7 @@ std::unique_ptr<PresentationServer> g_server; //VNC Server mit ScreenCapturing
 std::wstring g_lastErrorString; //Ausgabe der Verbindungsfehler
 std::shared_ptr<ScreenCapture> g_capture;
 bool g_devMode = false;
+int g_fps = 5;
 std::string g_cert; //Zertifikat wird aus den Ressourcen geladen
 
 HINSTANCE g_instance = 0;// current instance
@@ -332,6 +333,7 @@ bool startPresentation() {
 			}
 
 			g_server->setCapture(g_capture);
+			g_server->setFPS(g_fps);
 
 			//Wenn demo dann timer mit Countdown
 			if (g_server->isDemo() && g_server->useTimeOfDeath())
@@ -741,11 +743,25 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	//Als Versionshinweis build Zeitpunkt ausgeben
 	std::cout << "Build: " << __DATE__ << "," << __TIME__ << std::endl;
 
+	//Dev Modus
 	if (cmdline.find("-dev") != std::string::npos) {
 		g_devMode = true;
 		std::cout << "Running in development mode" << std::endl;
 	}
 
+	//FPS
+	{
+		size_t fpspos;
+		if ((fpspos = cmdline.find("-fps")) != std::string::npos) {
+			fpspos+=4;
+			g_fps = std::stoi(cmdline.substr(fpspos,cmdline.find(" ",fpspos)));
+			std::cout << "FPS: " << g_fps << std::endl;
+		}
+		else {
+			g_fps = 5;
+		}
+	}
+	
 	setDPIAware();
 
 	//Gdiplus initialisieren

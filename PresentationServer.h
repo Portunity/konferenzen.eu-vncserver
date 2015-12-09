@@ -26,6 +26,7 @@ to contact us see our website at <http://www.portunity.de>
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <functional>
 #include "ScreenCapture.h"
 
 /**
@@ -41,7 +42,9 @@ class runtime_error_with_extra_msg : public std::runtime_error {
 
 
 /**
-	Kapselt den VNC Server und den Authentifizierungsaufruf an die Managerroutine der node Anwendung
+ * Kapselt den VNC Server und den Authentifizierungsaufruf an die Managerroutine der node Anwendung.
+ * 
+ * Sollte eigentlich ein Singleton sein... 
 */
 class PresentationServer {
 private:
@@ -60,6 +63,10 @@ private:
 	bool _useTimeOfDeath;
 	//Wert der vom Webserver im Parameter MEssageBox �bermittelt wurde
 	std::wstring _messageBox;
+	//Angepeilte Frames pro Sekunde
+	int _fps;
+	//Das vom Webserver mitgeteilte Passwort für die Authentifizierung gegenüber dem Proxy
+	std::string _serverPassword;
 public:
 	/**
 		@param conferenceUrl Die Konferenzraumurl die an den Manager gesendet wird um diesen Server zu authentifizieren.
@@ -68,12 +75,12 @@ public:
 		@param managerPort Port f�r die Anfrage an den Manager
 		@param screenWidth Breite des zu �bertragenden Screens
 		@param screenHeight H�he des zu �bertragenden Screens
-		@param certificate F�r SSL Verbindungen zu benutzendes Zertifikat... (nicht benutzt)
+		@param caCertificate CA Zertifikat(e)
 		@param managerPath Pfad, der bei der Anfrage genutzt werden soll
 		@param managerParam Name des POST Parameters in dem die conferenceUrl �bermittelt werden soll.
 	*/
 	PresentationServer(const std::string & conferenceUrl, const std::string & managerHost,
-		unsigned short managerPort, int screenWidth, int screenHeight, const std::string & certificate = std::string() , const std::string & managerPath = std::string("/startPresentation"),
+		unsigned short managerPort, int screenWidth, int screenHeight, const std::string & certificate, const std::string & managerPath = std::string("/startPresentation"),
 		const std::string & managerParam = std::string("url"));
 	~PresentationServer();
 
@@ -111,5 +118,13 @@ public:
 	*/
 	const std::wstring & getMessageToShow() const {
 		return _messageBox;
+	}
+	
+	/**
+	 * Setzt die maximal pro Sekunde zu übertragenden Frames
+     * @param fps
+     */
+	void setFPS(int fps) {
+		_fps = fps<1?1:(fps > 50?50:fps);
 	}
 };

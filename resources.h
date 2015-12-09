@@ -28,7 +28,8 @@ const char* const STR_MANAGER_HOST = "www.konferenzen.eu";
 const unsigned short STR_MANAGER_PORT = 443;
 
 const char* const STR_MANAGER_HOST_DEV = "www.dev.konferenzen.eu";
-const unsigned short STR_MANAGER_PORT_DEV = 3061;
+const unsigned short STR_MANAGER_PORT_DEV = 443;
+//const unsigned short STR_MANAGER_PORT_DEV = 3061;
 
 const wchar_t* const STR_INFO_TEXT = L"Dieses Programm überträgt den Bildschirminhalt Ihres Monitors auf\ndie Präsentationsseite Ihres Konferenzen.eu-Konferenzraums.";
 const wchar_t* const STR_INPUT_LABEL = L"URL Ihres Konferenzraumes";
