@@ -44,7 +44,8 @@ const char* const STR_ERR_RFBHOST_UNREACHABLE = "VNC Proxy nicht erreichbar";
 const char* const STR_ERR_WRONG_ANSWER = "Fehlerhafte Antwort von Server";
 const char* const STR_ERR_TLS_FAILED = "Sichere Verbindung fehlgeschlagen";
 
-const char* const CIPHERSUITE_PRIORITIES = "SECURE128:SUITEB128:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-RSA:-DHE-RSA:-SHA1";
+const char* const CIPHERSUITE_PRIORITIES = "SECURE128:SUITEB128:-VERS-SSL3.0:-RSA";
+//const char* const CIPHERSUITE_PRIORITIES = "SECURE128:SUITEB128:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-RSA:-DHE-RSA:-SHA1";
 
 //Version des Tools, die an den Webserver �bermittelt wird,
 //immer dann erh�hen wenn �nderungen zu Inkompatibilit�t f�hren k�nnten
