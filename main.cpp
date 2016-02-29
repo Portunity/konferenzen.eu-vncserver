@@ -513,7 +513,7 @@ LRESULT CALLBACK windowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			graphics->DrawString(STR_INFO_TEXT, -1, fontArial.get(), PointF(rc.left + 2 * g_fontSize, rc.top + 5 * g_fontSize), g_brushBlack);
 
 			//Statusausgabe, weiß überschreiben, da sich der ja ändern könnte.
-			graphics->FillRectangle(g_brushWhite, rc.left + 5 * g_fontSize / 2, rc.bottom - 5 * g_fontSize, rc.right - rc.left - 4 * g_fontSize, 5 * g_fontSize / 2);
+			graphics->FillRectangle(g_brushWhite, rc.left + 5 * g_fontSize / 2, rc.bottom - 5 * g_fontSize, rc.right - rc.left - 4 * g_fontSize, 3 * g_fontSize);
 			if (g_server) {
 				if (g_server->isDemo() && g_server->useTimeOfDeath()) {
 					//Demo mit Ablaufzeit

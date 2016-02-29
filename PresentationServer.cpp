@@ -220,6 +220,7 @@ _server(0), _fps(5) {
 	//Erstmal d�rfte jetzt die Authorisierung und die Anfrage an den Manager geschehen
 	//Dazu einfach �ber nen Socket ne primitive http anfrage senden und die Antwort auswerten
 	//Achtung momentan ist BUF_SIZE auch die maximale Nachrichtengr��e die Empfangen werden kann!!
+	//@TODO Dringend ne bessere HTTP Implementation verwenden oder selber bauen.
 	const int BUF_SIZE = 2048;
 	char tmpBuffer[BUF_SIZE];
 	SOCKET httpSocket = rfbConnectToTcpAddr(const_cast<char*> (managerHost.c_str()), managerPort);
@@ -298,7 +299,7 @@ _server(0), _fps(5) {
 		httpRequest += " HTTP/1.1\r\n";
 		httpRequest += "Host: ";
 		httpRequest += managerHost + "\r\n";
-		httpRequest += "Content-Type: application/x-www-form-urlencoded\r\n";
+		httpRequest += "Content-Type: application/x-www-form-urlencoded\r\n"; //< Beachte der Webserver kann auf der Zielroute momentan auch nichts anderes
 		httpRequest += "Connection: close\r\n";
 		sprintf(tmpBuffer, "%d", httpRequestBody.length());
 		httpRequest += "Content-Length: " + std::string(tmpBuffer) + "\r\n";
@@ -383,6 +384,9 @@ _server(0), _fps(5) {
 	_server->httpPort = -1;
 	_server->http6Port = -1;
 	
+	//Die globalen Variablen werden zum Weiterreichen des Zustands an upgradeNewClientToTls verwendet.
+	//dieses konstrukt funktioniert natürlich nur wenn es nur eine Instanz dieser Klasse hier gibt... vlt sollte ich die wirklich zu nem Singleton machen oder
+	//natürlich besser das hier anständig implementieren.
 	g_serverPassword = _serverPassword;
 	g_peerHostName = managerHost;
 	g_caCertificate = caCertificate;
@@ -415,6 +419,8 @@ PresentationServer::~PresentationServer() {
 }
 
 bool PresentationServer::run() {
+	const long RFB_PROCESS_EVENTS_TIMEOUT_USEC = 20000;
+	
 	//Server tot oder kein Client mehr da?
 	if (!_server || _server->clientHead == 0)
 		return false;
@@ -431,7 +437,7 @@ bool PresentationServer::run() {
 		}
 	}
 
-	rfbProcessEvents(_server, 1000);
+	rfbProcessEvents(_server, RFB_PROCESS_EVENTS_TIMEOUT_USEC);
 
 	// Soll die Präsentation 
 	if (_useTimeOfDeath) {
