@@ -1,8 +1,8 @@
 /*
-Konferenzen.eu Pr‰sentationsserver. Einfacher vorkonfigurierter VNC Client f¸r Windows
+Konferenzen.eu PrÔøΩsentationsserver. Einfacher vorkonfigurierter VNC Client fÔøΩr Windows
 Einfache Klasse zur Aufnahme des Desktop
 
-Copyright(C) 2015 Portunity GmbH, author: Benjamin D¸rholt
+Copyright(C) 2015 Portunity GmbH, author: Benjamin DÔøΩrholt
 
 This program is free software : you can redistribute it and / or modify
 it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ ScreenCapture::ScreenCapture(HDC deviceToCapture, const POINT & cursorOffset) :
 
 	// _hCaptureDC = CreateCompatibleDC(_hScreenDC);
 
-	//Der DC f¸r das Zwischenspeichern muss kompatibel mit dem Desktop sein, sonst klappt das kopieren des Cursors nicht.
+	//Der DC fÔøΩr das Zwischenspeichern muss kompatibel mit dem Desktop sein, sonst klappt das kopieren des Cursors nicht.
 	HDC dsktpDC = GetDC(GetDesktopWindow());
 	_hCaptureDC = CreateCompatibleDC(dsktpDC);
 	ReleaseDC(GetDesktopWindow(),dsktpDC);
@@ -91,7 +91,7 @@ void ScreenCapture::capture(rfbScreenInfo* screen) {
 		StretchBlt(_hCaptureDC, 0, 0, _bi.biWidth, -_bi.biHeight,
 			_hScreenDC, 0, 0, _cxScreen, _cyScreen, SRCCOPY);
 
-		//Cursor drauf zeichnen, damit der mit ¸bertragen wird.
+		//Cursor drauf zeichnen, damit der mit ÔøΩbertragen wird.
 		POINT pt;
 		GetCursorPos(&pt);
 		pt.x = (pt.x - _cursorOff.x) * screen->width / _cxScreen;
@@ -101,10 +101,13 @@ void ScreenCapture::capture(rfbScreenInfo* screen) {
 		GetDIBits(_hCaptureDC, _hCaptureBitmap, 0, screen->height, _backBuffer, (BITMAPINFO *)&_bi, DIB_RGB_COLORS);
 
 		//R und B Kanal wieder richtig rum tauschen
+		//@TODO Mal nach dem "richtigen" Weg f√ºr das hier suchen. Irgendwo muss es ja Einstellungen in LibVNC und/oder NoVNC geben,
+		//mit der man die jeweiligen Farbkodierungen einstellen kann.
 		for (int x = 0; x < screen->width * screen->height; x++) {
 			std::swap(_backBuffer[x * 4], _backBuffer[x * 4 + 2]);
 		}
-		//ƒnderungen ermitteln... 
+		//ÔøΩnderungen ermitteln... 
+		//@TODO Das hier ist der wohl primitiveste Algorithmus den es daf√ºr √ºberhaupt gibt... => optimieren.
 		int min_x = screen->width - 1;
 		int min_y = screen->height - 1;
 		int max_x = 0, max_y = 0;
@@ -120,7 +123,7 @@ void ScreenCapture::capture(rfbScreenInfo* screen) {
 			}
 		}
 
-		if (min_x <= max_x && min_y <= max_y) { //ƒnderung erkannt
+		if (min_x <= max_x && min_y <= max_y) { //ÔøΩnderung erkannt
 			std::swap(screen->frameBuffer, _backBuffer);
 			rfbMarkRectAsModified(screen, min_x, min_y, max_x + 1, max_y + 1);
 		}
