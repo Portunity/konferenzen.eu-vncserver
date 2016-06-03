@@ -67,6 +67,13 @@ private:
 	int _fps;
 	//Das vom Webserver mitgeteilte Passwort für die Authentifizierung gegenüber dem Proxy
 	std::string _serverPassword;
+	
+	/**
+	 * gemeinsamer Code für Konstruktoren zum initialisieren des RFB Servers
+     */
+	void _initRfbServer (int screenWidth, int screenHeight, const std::string & serverPassword,
+		const std::string & peerHostName /*< für Zertifikatsprüfung */, const std::string & caCertificate,
+		const std::string & host, unsigned short port);
 public:
 	/**
 		@param conferenceUrl Die Konferenzraumurl die an den Manager gesendet wird um diesen Server zu authentifizieren.
@@ -82,6 +89,9 @@ public:
 	PresentationServer(const std::string & conferenceUrl, const std::string & managerHost,
 		unsigned short managerPort, int screenWidth, int screenHeight, const std::string & certificate, const std::string & managerPath = std::string("/startPresentation"),
 		const std::string & managerParam = std::string("url"));
+	PresentationServer(int screenWidth, int screenHeight, const std::string & serverPassword,
+		const std::string & peerHostName /*< für Zertifikatsprüfung */, const std::string & caCertificate,
+		const std::string & host, unsigned short port);
 	~PresentationServer();
 
 	bool run();

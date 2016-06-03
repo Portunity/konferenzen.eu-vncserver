@@ -370,6 +370,28 @@ _server(0), _fps(5) {
 	}
 
 	//Wenn die erfolgreich war dann den Server erstellen, Gr��e = Desktopgr��e
+	_initRfbServer(screenWidth, screenHeight, _serverPassword, managerHost, caCertificate, host, port);
+
+	if (lifetime > 0) {
+		_timeOfDeath = std::chrono::system_clock::now() + std::chrono::seconds(lifetime);
+		_useTimeOfDeath = true;
+	} else {
+		_useTimeOfDeath = false;
+	}
+}
+
+PresentationServer::PresentationServer(int screenWidth, int screenHeight, const std::string & serverPassword,
+		const std::string & peerHostName /*< für Zertifikatsprüfung */, const std::string & caCertificate,
+		const std::string & host, unsigned short port):_server(0), _fps(5), _useTimeOfDeath(false), _demo(false) {
+	_initRfbServer(screenWidth, screenHeight, serverPassword, peerHostName, caCertificate, host, port);
+}
+
+void PresentationServer::_initRfbServer(int screenWidth, int screenHeight, const std::string & serverPassword,
+		const std::string & peerHostName /*< für Zertifikatsprüfung */, const std::string & caCertificate,
+		const std::string & host, unsigned short port) {
+	
+	_serverPassword = serverPassword;
+	//Wenn die erfolgreich war dann den Server erstellen, Gr��e = Desktopgr��e
 	_server = rfbGetScreen(0, 0, screenWidth, screenHeight, 8, 3, 4);
 	int buffersize = _server->width * _server->height * (_server->bitsPerPixel / 8);
 	_server->frameBuffer = new char[buffersize];
@@ -387,8 +409,9 @@ _server(0), _fps(5) {
 	//Die globalen Variablen werden zum Weiterreichen des Zustands an upgradeNewClientToTls verwendet.
 	//dieses konstrukt funktioniert natürlich nur wenn es nur eine Instanz dieser Klasse hier gibt... vlt sollte ich die wirklich zu nem Singleton machen oder
 	//natürlich besser das hier anständig implementieren.
+	//... man kriegt echt das Würgen wenn man sich den Code ansieht, den man hier verbrochen hat...
 	g_serverPassword = _serverPassword;
-	g_peerHostName = managerHost;
+	g_peerHostName = peerHostName;
 	g_caCertificate = caCertificate;
 	_server->newClientCreationHook = upgradeNewClientToTls;
 
@@ -400,15 +423,10 @@ _server(0), _fps(5) {
 		throw std::runtime_error(STR_ERR_RFBHOST_UNREACHABLE);
 	}
 
+	//Starte Timer
 	_tick = std::chrono::high_resolution_clock::now();
-	if (lifetime > 0) {
-		_timeOfDeath = std::chrono::system_clock::now() + std::chrono::seconds(lifetime);
-		_useTimeOfDeath = true;
-	} else {
-		_useTimeOfDeath = false;
-	}
-
 }
+
 
 PresentationServer::~PresentationServer() {
 	if (_server) {

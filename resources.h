@@ -27,7 +27,7 @@ const wchar_t* const STR_WINDOW_TITLE = L"Konferenzen.eu Bildschirmübertragung"
 const char* const STR_MANAGER_HOST = "www.konferenzen.eu"; //< NICHT nur konferenzen.eu, da dort eine Weiterleitung stattfindet und die extrem primitive HTTP Implementation hier sowas nicht versteht
 const unsigned short STR_MANAGER_PORT = 443;
 
-const char* const STR_MANAGER_HOST_DEV = "www.dev.konferenzen.eu";
+const char* const STR_MANAGER_HOST_DEV = "www.konferenzen.ptydev.de";
 const unsigned short STR_MANAGER_PORT_DEV = 443;
 //const unsigned short STR_MANAGER_PORT_DEV = 3061;
 

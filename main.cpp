@@ -45,6 +45,11 @@ bool g_devMode = false;
 int g_fps = 5;
 std::string g_cert; //Zertifikat wird aus den Ressourcen geladen
 
+
+unsigned short g_cmdl_port = 0; //Commandline Parameter Port;
+std::string g_cmdl_password;
+
+
 HINSTANCE g_instance = 0;// current instance
 // Window Handles
 HWND g_windowHandle = 0; //Handle des Hauptfenster
@@ -324,12 +329,23 @@ bool startPresentation() {
 			cursorOff.y = moninfo.rcMonitor.top;
 
 			g_capture.reset(new ScreenCapture(dcmon, cursorOff));
-
-			if (g_devMode) {
-				g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST_DEV, STR_MANAGER_PORT_DEV, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+			
+			if (g_cmdl_port > 0) {
+				//Verbindungsparameter über Kommandozeile gesetzt
+				if (g_devMode) {
+					g_server.reset(new PresentationServer(GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cmdl_password, STR_MANAGER_HOST_DEV, g_cert, STR_MANAGER_HOST_DEV, g_cmdl_port));
+				}
+				else {
+					g_server.reset(new PresentationServer(GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cmdl_password, STR_MANAGER_HOST, g_cert, STR_MANAGER_HOST, g_cmdl_port));
+				}
 			}
 			else {
-				g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST, STR_MANAGER_PORT, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+				if (g_devMode) {
+					g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST_DEV, STR_MANAGER_PORT_DEV, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+				}
+				else {
+					g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST, STR_MANAGER_PORT, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+				}
 			}
 
 			g_server->setCapture(g_capture);
@@ -723,6 +739,23 @@ void setDPIAware() {
 	}
 }
 
+std::string getCmdlParam (const std::string & cmdline, const std::string & name) {
+	size_t ppos;
+	if ((ppos = cmdline.find(name)) != std::string::npos) {
+		ppos+=name.size()+1;
+		size_t epos = cmdline.find(" ",ppos);
+		if (epos != std::string::npos) {
+			return cmdline.substr(ppos,epos - ppos);
+		}
+		else {
+			return cmdline.substr(ppos);
+		}
+	}
+	else {
+		return std::string("");
+	}
+}
+
 int APIENTRY WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPTSTR    lpCmdLine,
@@ -750,16 +783,27 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	}
 
 	//FPS
-	{
-		size_t fpspos;
-		if ((fpspos = cmdline.find("-fps")) != std::string::npos) {
-			fpspos+=4;
-			g_fps = std::stoi(cmdline.substr(fpspos,cmdline.find(" ",fpspos)));
-			std::cout << "FPS: " << g_fps << std::endl;
-		}
-		else {
-			g_fps = 5;
-		}
+	std::string commandvalue = getCmdlParam(cmdline, "-fps");
+	if (commandvalue.size() > 0) {
+		g_fps = std::stoi(commandvalue);
+		std::cout << "FPS: " << g_fps << std::endl;
+	}
+	else {
+		g_fps = 5;
+	}
+	
+	//Explizites Ziel für Verbindung: Port
+	commandvalue = getCmdlParam(cmdline, "-port");
+	if (commandvalue.size() > 0) {
+		g_cmdl_port = std::stoi(commandvalue);
+		std::cout << "Port: " << g_cmdl_port << std::endl;
+	}
+	
+	//Explizites Ziel für Verbindung: Password
+	commandvalue = getCmdlParam(cmdline, "-pass");
+	if (commandvalue.size() > 0) {
+		g_cmdl_password = commandvalue;
+		std::cout << "Password: " << g_cmdl_password << std::endl;
 	}
 	
 	setDPIAware();
