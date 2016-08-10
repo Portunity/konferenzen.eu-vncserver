@@ -48,8 +48,9 @@ const char* const CIPHERSUITE_PRIORITIES = "SECURE128:SUITEB128:-VERS-SSL3.0:-RS
 //const char* const CIPHERSUITE_PRIORITIES = "SECURE128:SUITEB128:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-RSA:-DHE-RSA:-SHA1";
 
 //Version des Tools, die an den Webserver �bermittelt wird,
-//immer dann erh�hen wenn �nderungen zu Inkompatibilit�t f�hren k�nnten
-const int TOOL_VERSION = 4;
+//immer dann erh�hen wenn �nderungen zu Inkompatibilit�t f�hren k�nnten oder
+//ein Update erzwungen werden soll.
+const int TOOL_VERSION = 5;
 
 std::string urlencode(const std::string & param) {
 	std::string r;

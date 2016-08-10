@@ -1,8 +1,8 @@
 /*
-	Konferenzen.eu Präsentationsserver. Einfacher vorkonfigurierter VNC Client für Windows
+	Konferenzen.eu PrÃ¤sentationsserver. Einfacher vorkonfigurierter VNC Client fÃ¼r Windows
 	Einfache Klasse zur Aufnahme des Desktop
 
-	Copyright(C) 2015 Portunity GmbH, author: Benjamin Dürholt
+	Copyright(C) 2015 Portunity GmbH, author: Benjamin DÃ¼rholt
 
 	This program is free software : you can redistribute it and / or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,48 +23,39 @@
 
 #include <rfb/rfb.h>
 #include <windows.h>
+#include <cstdlib>
+#include <cstdint>
 
 /**
 	Nutzt BitBlt und ein Bitmap um den Bildschirminhalt zu kriegen und
-	diesen an den rfbScreen zu übergeben.
+	diesen an den rfbScreen zu Ã¼bergeben.
 */
 class ScreenCapture {
 private:
-	//DC of screen to capture
-	HDC _hScreenDC;
-	// Resolution of screen DC
-	long _cxScreen;
-	long _cyScreen;
-
-	//Bitmap DC used for copying
-	HDC _hCaptureDC;
-	//bitmap used for capturing
-	HBITMAP _hCaptureBitmap;
-	//Bitmapinfo
-	BITMAPINFOHEADER   _bi;
-
-	//Buffer for copying from bitmap
-	char* _backBuffer;
-
-	POINT _cursorOff;
-
-	/*
-		Passt Bitmaps und Zwischenspeicher an den Screen an
-	*/
-	void resizeBitmap(rfbScreenInfo* screen);
+	
+    MONITORINFOEX _monitorInfo;//< Monitor dessen Inhalt Ã¼bertragen werden soll.
+	const unsigned short _bitsPerPixel = 32; //< UnterstÃ¼tzt wird nur eine Farbtiefe von 32 Bit
+    std::uint32_t* _backBuffer;//< Buffer for copying from bitmap
+	std::size_t _backBufferSize; //< Size of Backbuffer
+	
 public:
-	/**
-		Initialisiert das Objekt.
-		@param deviceToCapture ist der zu spiegelnde DC, wird beim
-		zerstören des Objekts mit DeleteDC wieder freigegebn
-	*/
-	ScreenCapture(HDC deviceToCapture, const POINT & cursorOffset );
+    /**
+     * Intialisiert das Objekt fÃ¼r die Aufnahme des Inhalts des angegebenen Bildschirms
+     * @param monInfo Struktur, welche den aufzunehmenden Monitor beschreibt
+     */
+    ScreenCapture(const MONITORINFOEX & monInfo);
+	
 	~ScreenCapture();
 
 	/**
-		Erfasst den Bildschirminhalt und schreibt dies in den Puffer des Servers und markiert die
-		erkannten Bereiche als verändert.
+		Erfasst den Bildschirminhalt, schreibt dies in den Puffer des Servers und markiert die
+		erkannten Bereiche als verÃ¤ndert.
 	*/
 	void capture(rfbScreenInfo* screen);
-
+    
+    /**
+     * Setzt den Monitor dessen Inhalt aufzunehmen ist.
+     * @param monInfo
+     */
+    void setMonitorInfo(const MONITORINFOEX & monInfo); 
 };

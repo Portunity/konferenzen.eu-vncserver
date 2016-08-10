@@ -1,5 +1,5 @@
 /*
-Konferenzen.eu Pr�sentationsserver. Einfacher vorkonfigurierter VNC Client f�r Windows
+Konferenzen.eu Präsentationsserver. Einfacher vorkonfigurierter VNC Client f�r Windows
 Einfache Klasse zur Aufnahme des Desktop
 
 Copyright(C) 2015 Portunity GmbH, author: Benjamin D�rholt
@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.If not, see <http://www.gnu.org/licenses/>
 
 to contact us see our website at <http://www.portunity.de>
-*/
+ */
 #include "ScreenCapture.h"
 #include "PresentationServer.h"
 #include <algorithm>
@@ -26,95 +26,90 @@ to contact us see our website at <http://www.portunity.de>
 
 extern HINSTANCE g_hInstance;
 
-ScreenCapture::ScreenCapture(HDC deviceToCapture, const POINT & cursorOffset) :
- _hScreenDC(deviceToCapture), _hCaptureDC(0), _hCaptureBitmap(), _backBuffer(0), _cursorOff(cursorOffset) {
-
-	_cxScreen = GetDeviceCaps(_hScreenDC, HORZRES);
-	_cyScreen = GetDeviceCaps(_hScreenDC, VERTRES);
-
-	// _hCaptureDC = CreateCompatibleDC(_hScreenDC);
-
-	//Der DC f�r das Zwischenspeichern muss kompatibel mit dem Desktop sein, sonst klappt das kopieren des Cursors nicht.
-	HDC dsktpDC = GetDC(GetDesktopWindow());
-	_hCaptureDC = CreateCompatibleDC(dsktpDC);
-	ReleaseDC(GetDesktopWindow(),dsktpDC);
-
+void bswap (std::uint32_t & p) {
+	__asm__(
+		"bswap %0;\n\t"
+		: "+r"(p));
 }
 
-void ScreenCapture::resizeBitmap(rfbScreenInfo* screen) {
-
-	if (screen && (_backBuffer == 0 || 
-		_bi.biWidth != screen->width ||
-		-_bi.biHeight != screen->height ||
-		_bi.biBitCount != screen->bitsPerPixel)) {
-
-		delete[] _backBuffer;
-		if (_hCaptureBitmap)
-			DeleteObject(_hCaptureBitmap);
-
-		_hCaptureBitmap = CreateCompatibleBitmap(_hScreenDC,
-			screen->width, screen->height);
-
-		_bi.biSize = sizeof(BITMAPINFOHEADER);
-		_bi.biWidth = screen->width;
-		_bi.biHeight = -screen->height;
-		_bi.biPlanes = 1;
-		_bi.biBitCount = screen->bitsPerPixel;
-		_bi.biCompression = BI_RGB;
-		_bi.biSizeImage = 0;
-		_bi.biXPelsPerMeter = 0;
-		_bi.biYPelsPerMeter = 0;
-		_bi.biClrUsed = 0;
-		_bi.biClrImportant = 0;
-
-		int buffersize = screen->width * screen->height * (screen->bitsPerPixel / 8);
-		_backBuffer = new char[buffersize];
-	}
+ScreenCapture::ScreenCapture(const MONITORINFOEX & monInfo) :
+_monitorInfo(monInfo), _backBuffer(0), _backBufferSize(0) {
 }
 
 ScreenCapture::~ScreenCapture() {
 	delete[] _backBuffer;
-	DeleteDC(_hCaptureDC);
-	if (_hCaptureBitmap)
-		DeleteObject(_hCaptureBitmap);
-	DeleteDC(_hScreenDC);
 }
 
 void ScreenCapture::capture(rfbScreenInfo* screen) {
 	if (screen) {
-		resizeBitmap(screen);
-		//gilt: screen->width = _bi.biWidth
-		//      screen->height = -_bi.biHeight
-
-		SelectObject(_hCaptureDC, _hCaptureBitmap);
-
-		StretchBlt(_hCaptureDC, 0, 0, _bi.biWidth, -_bi.biHeight,
-			_hScreenDC, 0, 0, _cxScreen, _cyScreen, SRCCOPY);
-
-		//Cursor drauf zeichnen, damit der mit �bertragen wird.
-		POINT pt;
-		GetCursorPos(&pt);
-		pt.x = (pt.x - _cursorOff.x) * screen->width / _cxScreen;
-		pt.y = (pt.y - _cursorOff.y) * screen->height / _cyScreen;
-		DrawIcon(_hCaptureDC, pt.x, pt.y,(HICON) GetCursor());
-
-		GetDIBits(_hCaptureDC, _hCaptureBitmap, 0, screen->height, _backBuffer, (BITMAPINFO *)&_bi, DIB_RGB_COLORS);
-
-		//R und B Kanal wieder richtig rum tauschen
-		//@TODO Mal nach dem "richtigen" Weg für das hier suchen. Irgendwo muss es ja Einstellungen in LibVNC und/oder NoVNC geben,
-		//mit der man die jeweiligen Farbkodierungen einstellen kann.
-		for (int x = 0; x < screen->width * screen->height; x++) {
-			std::swap(_backBuffer[x * 4], _backBuffer[x * 4 + 2]);
+		if (_bitsPerPixel != screen->bitsPerPixel) {
+			std::cerr<<"Only 32 bit pixel depth is supported"<<std::endl;
+			throw std::runtime_error("Only 32 bit pixel depth is supported");
 		}
-		//�nderungen ermitteln... 
+		const long width = screen->width;
+		const long height = screen->height;
+		
+		//Erstelle einen Devicekontext für den aufzunehmenden Monitor
+		HDC monitorDC = CreateDC("DISPLAY", _monitorInfo.szDevice, NULL, NULL);
+		HDC dsktpDC = GetDC(GetDesktopWindow()); //< Leihe den Desktop DC
+		HDC captureDC = CreateCompatibleDC(dsktpDC); //< Erstelle einen kompatiblen DC für das Kopieren
+		
+		ReleaseDC(GetDesktopWindow(), dsktpDC); //< Desktop wieder loslassen
+		
+		//Erstelle ein Bitmap für die Aufnahme des Bildschirminhalts mit der für die Übertragung vorgesehenen Größe
+		HBITMAP screenBitmap = CreateCompatibleBitmap(monitorDC, width, height);
+		BITMAPINFOHEADER screenBitmapInfo{
+			sizeof (BITMAPINFOHEADER),
+			width,
+			-height,
+			1,
+			(WORD)_bitsPerPixel,
+			BI_RGB
+		};
+		std::size_t requiredBackBufferSize = width * height;
+		//Muss der Puffer reallokiert werden?
+		if (requiredBackBufferSize != _backBufferSize || _backBuffer == 0) {
+			std::cout<<"Reallocate intermediate Pixelbuffer. ("<<requiredBackBufferSize<<")"<<std::endl;
+			delete[] _backBuffer;
+			_backBuffer = new std::uint32_t[requiredBackBufferSize];
+			_backBufferSize = requiredBackBufferSize;
+		}
+
+		SelectObject(captureDC, screenBitmap); //< Bitmap in den Aufnahme DC einsetzen
+		StretchBlt(captureDC, 0, 0, screenBitmapInfo.biWidth, -screenBitmapInfo.biHeight,
+			monitorDC, 0, 0, GetDeviceCaps(monitorDC, HORZRES), GetDeviceCaps(monitorDC, VERTRES), SRCCOPY); //< Kopiere vom Monitor DC in das Bitmap
+
+		//Draw Cursor
+		CURSORINFO cursorInfo{
+			sizeof(CURSORINFO)
+		};
+		GetCursorInfo(&cursorInfo);
+		
+		DrawIconEx(captureDC, 
+			//Korrekte Position wird einfach in das Koordinatensystem des Monitors und dann 
+			//durch Skalieren in das Koordinatensystems des Bitmaps transformiert.
+			(cursorInfo.ptScreenPos.x - _monitorInfo.rcMonitor.left) * width / GetDeviceCaps(monitorDC,HORZRES), 
+			(cursorInfo.ptScreenPos.y - _monitorInfo.rcMonitor.top) * height / GetDeviceCaps(monitorDC,VERTRES),
+			cursorInfo.hCursor,
+			0,0,0,NULL,DI_NORMAL);
+		
+		//Kopieren aus dem Bitmap in in den eigenen Puffer
+		GetDIBits(captureDC, screenBitmap, 0, height, _backBuffer, (BITMAPINFO *) & screenBitmapInfo, DIB_RGB_COLORS);
+
+		//Aufräumen:
+		DeleteObject(screenBitmap);
+		DeleteDC(captureDC);
+		DeleteDC(monitorDC);
+		
+		//Änderungen ermitteln... 
 		//@TODO Das hier ist der wohl primitiveste Algorithmus den es dafür überhaupt gibt... => optimieren.
-		int min_x = screen->width - 1;
-		int min_y = screen->height - 1;
+		int min_x = width - 1;
+		int min_y = height - 1;
 		int max_x = 0, max_y = 0;
 
-		for (int y = 0; y < screen->height; y++) {
-			for (int x = 0; x < screen->width; x++) {
-				if (((uint32_t*)_backBuffer)[x + y*screen->width] != ((uint32_t*)screen->frameBuffer)[x + y*screen->width]) {
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				if (_backBuffer[x + y * width] != ((uint32_t*) screen->frameBuffer)[x + y * width]) {
 					if (x < min_x) min_x = x;
 					if (y < min_y) min_y = y;
 					if (x > max_x) max_x = x;
@@ -123,9 +118,29 @@ void ScreenCapture::capture(rfbScreenInfo* screen) {
 			}
 		}
 
-		if (min_x <= max_x && min_y <= max_y) { //�nderung erkannt
-			std::swap(screen->frameBuffer, _backBuffer);
+		if (min_x <= max_x && min_y <= max_y) { //�nderung erkannt			
+			std::uint32_t pixel;
+			//Pixelformat gemäß screen->serverFormat anpassen
+			for (int x = 0; x < width * height; x++) {
+				pixel = _backBuffer[x];
+				_backBuffer[x] = ((pixel & 0x000000ff) << screen->serverFormat.blueShift) | //blau
+					             ((pixel >> 8 & 0x000000ff) << screen->serverFormat.greenShift) | //grün
+								 ((pixel >> 16 & 0x000000ff) << screen->serverFormat.redShift); //rot
+				if (screen->serverFormat.bigEndian) {
+					bswap(_backBuffer[x]);
+				}
+			}
+			
+			//swap pointers to buffers
+			std::uint32_t* swap = (std::uint32_t*)screen->frameBuffer;
+			screen->frameBuffer = (char*)_backBuffer;
+			_backBuffer = swap;
+			
 			rfbMarkRectAsModified(screen, min_x, min_y, max_x + 1, max_y + 1);
 		}
 	}
+}
+
+void ScreenCapture::setMonitorInfo(const MONITORINFOEX & monInfo) {
+	_monitorInfo = monInfo;
 }

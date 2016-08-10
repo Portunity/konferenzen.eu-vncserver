@@ -318,33 +318,33 @@ bool startPresentation() {
 			moninfo.cbSize = sizeof(MONITORINFOEX);
 			GetMonitorInfo(hmon, &moninfo);
 
+			//Infos zum Monitor ausgeben.
 			std::cout << "Monitor: " << moninfo.szDevice << std::endl;
 			HDC dcmon = CreateDC("DISPLAY", moninfo.szDevice, NULL, NULL);
-			std::cout << GetDeviceCaps(dcmon, HORZRES) << "x" << GetDeviceCaps(dcmon, VERTRES) << std::endl;
+			int screenWidth = GetDeviceCaps(dcmon, HORZRES);
+			int screenHeight = GetDeviceCaps(dcmon, VERTRES);
+			std::cout << screenWidth << "x" << screenHeight << std::endl;
 			std::cout << "@" << GetDeviceCaps(dcmon, LOGPIXELSX) << " " << GetDeviceCaps(dcmon, LOGPIXELSY) << std::endl;
 			std::cout << "off: " << moninfo.rcMonitor.left << " " << moninfo.rcMonitor.top << std::endl;
-
-			POINT cursorOff;
-			cursorOff.x = moninfo.rcMonitor.left;
-			cursorOff.y = moninfo.rcMonitor.top;
-
-			g_capture.reset(new ScreenCapture(dcmon, cursorOff));
+			DeleteDC(dcmon);
+			
+			g_capture.reset(new ScreenCapture(moninfo));
 			
 			if (g_cmdl_port > 0) {
 				//Verbindungsparameter über Kommandozeile gesetzt
 				if (g_devMode) {
-					g_server.reset(new PresentationServer(GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cmdl_password, STR_MANAGER_HOST_DEV, g_cert, STR_MANAGER_HOST_DEV, g_cmdl_port));
+					g_server.reset(new PresentationServer(screenWidth, screenHeight, g_cmdl_password, STR_MANAGER_HOST_DEV, g_cert, STR_MANAGER_HOST_DEV, g_cmdl_port));
 				}
 				else {
-					g_server.reset(new PresentationServer(GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cmdl_password, STR_MANAGER_HOST, g_cert, STR_MANAGER_HOST, g_cmdl_port));
+					g_server.reset(new PresentationServer(screenWidth, screenHeight, g_cmdl_password, STR_MANAGER_HOST, g_cert, STR_MANAGER_HOST, g_cmdl_port));
 				}
 			}
 			else {
 				if (g_devMode) {
-					g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST_DEV, STR_MANAGER_PORT_DEV, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+					g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST_DEV, STR_MANAGER_PORT_DEV, screenWidth, screenHeight, g_cert));
 				}
 				else {
-					g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST, STR_MANAGER_PORT, GetDeviceCaps(dcmon, HORZRES), GetDeviceCaps(dcmon, VERTRES), g_cert));
+					g_server.reset(new PresentationServer(buffer, STR_MANAGER_HOST, STR_MANAGER_PORT, screenWidth, screenHeight, g_cert));
 				}
 			}
 
