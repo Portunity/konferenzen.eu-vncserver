@@ -101,6 +101,18 @@ void ScreenCapture::capture(rfbScreenInfo* screen) {
 		DeleteDC(captureDC);
 		DeleteDC(monitorDC);
 		
+		std::uint32_t pixel;
+		//Pixelformat gemäß screen->serverFormat anpassen
+		for (int x = 0; x < width * height; x++) {
+			pixel = _backBuffer[x];
+			_backBuffer[x] = ((pixel & 0x000000ff) << screen->serverFormat.blueShift) | //blau
+							 ((pixel >> 8 & 0x000000ff) << screen->serverFormat.greenShift) | //grün
+							 ((pixel >> 16 & 0x000000ff) << screen->serverFormat.redShift); //rot
+			if (screen->serverFormat.bigEndian) {
+				bswap(_backBuffer[x]);
+			}
+		}
+
 		//Änderungen ermitteln... 
 		//@TODO Das hier ist der wohl primitiveste Algorithmus den es dafür überhaupt gibt... => optimieren.
 		int min_x = width - 1;
@@ -119,18 +131,7 @@ void ScreenCapture::capture(rfbScreenInfo* screen) {
 		}
 
 		if (min_x <= max_x && min_y <= max_y) { //�nderung erkannt			
-			std::uint32_t pixel;
-			//Pixelformat gemäß screen->serverFormat anpassen
-			for (int x = 0; x < width * height; x++) {
-				pixel = _backBuffer[x];
-				_backBuffer[x] = ((pixel & 0x000000ff) << screen->serverFormat.blueShift) | //blau
-					             ((pixel >> 8 & 0x000000ff) << screen->serverFormat.greenShift) | //grün
-								 ((pixel >> 16 & 0x000000ff) << screen->serverFormat.redShift); //rot
-				if (screen->serverFormat.bigEndian) {
-					bswap(_backBuffer[x]);
-				}
-			}
-			
+			std::cout<<"send area ("<<min_x<<'|'<<min_y<<") ("<<max_x<<'|'<<max_y<<')'<<std::endl;
 			//swap pointers to buffers
 			std::uint32_t* swap = (std::uint32_t*)screen->frameBuffer;
 			screen->frameBuffer = (char*)_backBuffer;
