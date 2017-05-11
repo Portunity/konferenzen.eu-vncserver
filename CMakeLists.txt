@@ -1,55 +1,71 @@
 cmake_minimum_required (VERSION 2.6)
-
 project (konferenzen.eu-vncserver)
-set( CMAKE_VERBOSE_MAKEFILE on )
-# Magie um Ressourcen in die fertige EXE zu packen
-set(RES_FILES "resources.rc")
+
+# Setup
+#set( CMAKE_VERBOSE_MAKEFILE on )
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++0x -mwindows -static-libgcc -static-libstdc++")
+SET(CMAKE_EXE_LINKER_FLAGS "-static")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+add_executable(konferenzen.eu-vncserver WIN32 "main.cpp" "PresentationServer.cpp" "ScreenCapture.cpp" "resources.rc")
+set_target_properties(konferenzen.eu-vncserver PROPERTIES LINK_SEARCH_END_STATIC 1)
+		
+# Erstellen der Ressourcenfiles aktivieren
 set(CMAKE_RC_COMPILER_INIT windres)
 ENABLE_LANGUAGE(RC)
 SET(CMAKE_RC_COMPILE_OBJECT "<CMAKE_RC_COMPILER> -O coff <DEFINES> -i <SOURCE> -o <OBJECT> ${CMAKE_RC_FLAGS}")
 
-find_library (SHLWAPI_LIBRARY libshlwapi.a)
-find_library (WS2_32_LIBRARY libws2_32.a)
-find_library (GDIPLUS_LIBRARY libgdiplus.a)
-set(WIN_LIBS ${SHLWAPI_LIBRARY} ${WS2_32_LIBRARY} ${GDIPLUS_LIBRARY})
+# Bibliotheken sammeln:
+## Windows System Libraries
+target_link_libraries(konferenzen.eu-vncserver PRIVATE gdi32 gdiplus shlwapi)
 
-find_package(PkgConfig)
-if (PKG_CONFIG_FOUND)
-	message("found pkg-config")
-	pkg_check_modules(GNUTLS gnutlsxx)
-	option(WITHOUT_GNUTLS "Disable GnuTLS" OFF)
-	if (NOT WITHOUT_GNUTLS AND GNUTLS_FOUND) 
-		message("with gnutls")
-		add_definitions(-DHAS_GNUTLS) #reaktivieren wenn umgeschrieben ohne cpp wrapper
-		link_directories(${GNUTLS_STATIC_LIBRARY_DIRS})
-		message(${GNUTLS_STATIC_LIBRARIES})
-		set(ADDITIONAL_LIBS ${ADDITIONAL_LIBS} ${GNUTLS_STATIC_LIBRARIES} crypt32)
-		set(ADDITIONAL_INCLUDES ${ADDITIONAL_INCLUDES} ${GNUTLS_STATIC_INCLUDE_DIRS})
-	endif()
-endif()
+## LibVNC
+find_package(LibVNC REQUIRED)
+target_include_directories(konferenzen.eu-vncserver PRIVATE ${LibVNC_INCLUDE_DIRS})
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${LibVNC_LIBRARIES})
+target_compile_definitions(konferenzen.eu-vncserver PRIVATE ${LibVNC_DEFINITIONS})
 
-#find_library (GNUTLS_LIBRARY libgnutls.a)
-#find_library (GNUTLSXX_LIBRARY libgnutlsxx.a)
-#if (GNUTLS_LIBRARY AND GNUTLSXX_LIBRARY)
-#	find_library(NETTLE_LIBRARY libnettle.a)
-#	find_library(HOGWEED_LIBRARY libhogweed.a)
-#	find_library(GMP_LIBRARY libgmp.a)
-#	if (NETTLE_LIBRARY AND HOGWEED_LIBRARY AND GMP_LIBRARY)
-#		add_definitions(-DHAS_GNUTLS)
-#		set(GNUTLS_LIBRARY ${GNUTLSXX_LIBRARY} ${GNUTLS_LIBRARY} ${HOGWEED_LIBRARY} ${NETTLE_LIBRARY} ${GMP_LIBRARY})
-#		set(GNUTLS_INCLUDE_DIR ${GNUTLS_INCLUDE_DIR} ${GNUTLSXX_INCLUDE_DIR} ${HOGWEED_INCLUDE_DIR} ${NETTLE_INCLUDE_DIR} ${GMP_INCLUDE_DIR})
-#
-#		message("with gnutls")
-#		message(${GNUTLS_LIBRARY})
-#		set(ADDITIONAL_LIBS ${ADDITIONAL_LIBS} ${GNUTLS_LIBRARY} z intl ws2_32 iconv ws2_32 gmp)
-#		set(ADDITIONAL_INCLUDES ${ADDITIONAL_INCLUDES} ${GNUTLS_INCLUDE_DIR})
-#	endif()
-#endif()
+## zlib
+find_package(ZLIB)
+target_include_directories(konferenzen.eu-vncserver PRIVATE ${ZLIB_INCLUDE_DIR})
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${ZLIB_LIBRARIES})
 
-include_directories(${LIBVNCSERVER_INCLUDE_DIR} ${CMAKE_BINARY_DIR} ${ADDITIONAL_INCLUDES})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -mwindows -static-libgcc -static-libstdc++")
+## jpeg
+find_package(JPEG)
+target_include_directories(konferenzen.eu-vncserver PRIVATE ${JPEG_INCLUDE_DIR})
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${JPEG_LIBRARIES})
 
-add_executable(konferenzen.eu-vncserver WIN32 main.cpp PresentationServer.cpp ScreenCapture.cpp ${RES_FILES})
-message(konferenzen.eu-vncserver ${LIBVNCSERVER_LIBRARY} ${ZLIB_LIBRARY} ${JPEG_LIBRARY} ${PNG_LIBRARY} ${WIN_LIBS} ${ADDITIONAL_LIBS})
-target_link_libraries (konferenzen.eu-vncserver ${LIBVNCSERVER_LIBRARY} ${ZLIB_LIBRARY} ${JPEG_LIBRARY} ${PNG_LIBRARY} ${WIN_LIBS} ${ADDITIONAL_LIBS})
+## png
+find_package(PNG)
+target_include_directories(konferenzen.eu-vncserver PRIVATE ${PNG_INCLUDE_DIR})
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${PNG_LIBRARIES})
 
+## Intl
+find_package(Intl)
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${Intl_LIBRARIES})
+
+## Idn
+find_library(IDN_LIBRARY idn)
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${IDN_LIBRARY})
+
+## gmp, nettle, gnutls
+find_package(GnuTLS)
+target_include_directories(konferenzen.eu-vncserver PRIVATE ${GNUTLS_INCLUDE_DIR})
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${GNUTLS_LIBRARIES})
+
+find_library(LIBHOGWEED_LIBRARY libhogweed)
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${LIBHOGWEED_LIBRARY})
+
+find_library(NETTLE_LIBRARY nettle)
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${NETTLE_LIBRARY})
+
+find_library(GMP_LIBRARY gmp)
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${GMP_LIBRARY})
+
+## Iconv
+find_library(ICONV_LIBRARY NAMES libiconv.a iconv.a )
+target_link_libraries(konferenzen.eu-vncserver PRIVATE ${ICONV_LIBRARY})
+
+## ws2 crypt32
+target_link_libraries(konferenzen.eu-vncserver PRIVATE crypt32 ws2_32)
