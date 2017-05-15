@@ -10,7 +10,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 add_executable(konferenzen.eu-vncserver WIN32 "main.cpp" "PresentationServer.cpp" "ScreenCapture.cpp" "resources.rc")
 set_target_properties(konferenzen.eu-vncserver PROPERTIES LINK_SEARCH_END_STATIC 1)
-		
 # Erstellen der Ressourcenfiles aktivieren
 set(CMAKE_RC_COMPILER_INIT windres)
 ENABLE_LANGUAGE(RC)
@@ -43,11 +42,15 @@ target_link_libraries(konferenzen.eu-vncserver PRIVATE ${PNG_LIBRARIES})
 
 ## Intl
 find_package(Intl)
-target_link_libraries(konferenzen.eu-vncserver PRIVATE ${Intl_LIBRARIES})
+if (Intl_FOUND)
+  target_link_libraries(konferenzen.eu-vncserver PRIVATE ${Intl_LIBRARIES})
+endif()
 
 ## Idn
 find_library(IDN_LIBRARY idn)
-target_link_libraries(konferenzen.eu-vncserver PRIVATE ${IDN_LIBRARY})
+if (IDN_FOUND)
+  target_link_libraries(konferenzen.eu-vncserver PRIVATE ${IDN_LIBRARY})
+endif()
 
 ## gmp, nettle, gnutls
 find_package(GnuTLS)
@@ -65,7 +68,9 @@ target_link_libraries(konferenzen.eu-vncserver PRIVATE ${GMP_LIBRARY})
 
 ## Iconv
 find_library(ICONV_LIBRARY NAMES libiconv.a iconv.a )
-target_link_libraries(konferenzen.eu-vncserver PRIVATE ${ICONV_LIBRARY})
+if (ICONV_FOUND)
+  target_link_libraries(konferenzen.eu-vncserver PRIVATE ${ICONV_LIBRARY})
+endif()
 
 ## ws2 crypt32
 target_link_libraries(konferenzen.eu-vncserver PRIVATE crypt32 ws2_32)

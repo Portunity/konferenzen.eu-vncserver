@@ -24,8 +24,8 @@
 #include <windows.h>
 #include <gdiplus.h>
 using namespace Gdiplus;
-#include <Shlwapi.h>
-#include <Richedit.h>
+#include <shlwapi.h>
+#include <richedit.h>
 
 #include <math.h>
 #include <algorithm>
