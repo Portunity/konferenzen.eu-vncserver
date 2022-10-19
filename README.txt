@@ -1,6 +1,6 @@
 License
 -------
-Konferenzen.eu Bildschirm�bertragung, just a simple VNC Server with Windows GUI using LibVNCServer.
+Konferenzen.eu Bildschirmuebertragung, just a simple VNC Server with Windows GUI using LibVNCServer.
 
 Copyright (C) 2015 Portunity GmbH
 
